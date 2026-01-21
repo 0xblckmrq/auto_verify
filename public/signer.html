@@ -44,11 +44,10 @@
     let isWalletConnect = false;
     let wcProvider;
 
+    // Function to sign and submit
     async function signAndSubmit() {
-      if (!challenge || !userId) return alert("Missing challenge or userId");
-      status.innerText = "Signing challenge...";
-
       try {
+        status.innerText = "Signing challenge...";
         const sig = await signer.signMessage(challenge);
         sigOutput.innerText = sig;
 
@@ -78,7 +77,7 @@
     btn.onclick = async () => {
       status.innerText = "Connecting wallet...";
       try {
-        // Desktop or injected mobile wallet
+        // Desktop / injected wallets
         if (window.ethereum) {
           const provider = new ethers.BrowserProvider(window.ethereum);
           await provider.send("eth_requestAccounts", []);
@@ -91,10 +90,14 @@
           wcProvider = new WalletConnectProvider.default({
             rpc: { 1: "https://cloudflare-eth.com" }
           });
-          await wcProvider.enable(); // user approves wallet connection
+
+          // ⚠ IMPORTANT: enable() must fully resolve before signer creation
+          await wcProvider.enable();
+
           const provider = new ethers.BrowserProvider(wcProvider);
           signer = await provider.getSigner();
-          status.innerText = "WalletConnect connected: open wallet app and approve signing request.";
+
+          status.innerText = "WalletConnect connected: open your wallet app and approve the signing request.";
         }
 
         await signAndSubmit();
