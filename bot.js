@@ -23,6 +23,7 @@ const API_URL = "http://manifest.human.tech/api/covenant/signers-export";
 const app = express();
 app.use(express.static(path.join(__dirname, "public")));
 app.use(express.json());
+
 const PORT = process.env.PORT || 3000;
 app.get("/", (req, res) => res.send("Bot running"));
 app.listen(PORT, () => console.log(`HTTP server running on port ${PORT}`));
@@ -35,7 +36,7 @@ const challenges = new Map();
 const cooldowns = new Map();
 const COOLDOWN_SECONDS = 300;
 
-// ===== REGISTER SLASH COMMANDS =====
+// ===== REGISTER /verify SLASH COMMAND =====
 (async () => {
   const commands = [
     new SlashCommandBuilder()
@@ -84,7 +85,7 @@ client.on("interactionCreate", async interaction => {
 
     // Check whitelist
     const list = await fetchWhitelist();
-    const entry = list.find(w => 
+    const entry = list.find(w =>
       w.walletAddress?.toLowerCase() === wallet &&
       w.covenantStatus?.toUpperCase() === "SIGNED" &&
       w.humanityStatus?.toUpperCase() === "VERIFIED"
@@ -103,11 +104,15 @@ client.on("interactionCreate", async interaction => {
         ]
       });
 
+      // Store challenge
       const challenge = `Verify ownership for ${wallet} at ${Date.now()}`;
       challenges.set(member.id, { challenge, wallet, channelId: channel.id });
 
-      const signerUrl = `${EXTERNAL_URL.replace(/\/$/, "")}/signer.html?userId=${member.id}&challenge=${encodeURIComponent(challenge)}`;
+      // Generate signer URL
+      const base = EXTERNAL_URL.replace(/\/$/, "");
+      const signerUrl = `${base}/signer.html?userId=${member.id}&challenge=${encodeURIComponent(challenge)}`;
 
+      // Send instructions in private channel
       await channel.send(`
 # human.tech Covenant Signatory Verification
 
@@ -141,9 +146,11 @@ app.post("/api/signature", async (req, res) => {
 
     const guild = client.guilds.cache.get(GUILD_ID);
     const member = await guild.members.fetch(userId);
+
     const role = guild.roles.cache.find(r => r.name === "Covenant Verified Signatory");
     if (role) await member.roles.add(role);
 
+    // Clean up
     challenges.delete(userId);
 
     const channel = guild.channels.cache.get(data.channelId);
