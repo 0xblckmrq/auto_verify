@@ -6,7 +6,7 @@
   <style>
     body { font-family: sans-serif; padding: 20px; max-width: 600px; margin:auto; }
     input { width: 90%; padding: 8px; margin-bottom: 10px; }
-    button { padding: 10px 14px; font-size:16px; cursor:pointer; margin-right:10px; }
+    button { padding: 10px 14px; font-size:16px; cursor:pointer; }
     #status, #signature { margin-top: 10px; word-break: break-word; }
   </style>
 </head>
@@ -18,32 +18,24 @@
   <input type="text" id="msg" readonly>
   <br>
   <button id="signBtn">Connect & Sign</button>
-  <button id="retryBtn" style="display:none">Retry Signing</button>
 
   <p id="status"></p>
   <p id="signature"></p>
 
-  <!-- WalletConnect v1 -->
-  <script src="https://cdn.jsdelivr.net/npm/@walletconnect/web3-provider@1.8.0/dist/umd/index.min.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/ethers@6.9.0/dist/ethers.umd.min.js"></script>
-
   <script>
     const params = new URLSearchParams(window.location.search);
     const challenge = params.get("challenge") || "";
     const userId = params.get("userId");
-    const INFURA_KEY = "${INFURA_KEY}";
 
     const msgInput = document.getElementById("msg");
     const status = document.getElementById("status");
     const sigOutput = document.getElementById("signature");
     const btn = document.getElementById("signBtn");
-    const retryBtn = document.getElementById("retryBtn");
 
     msgInput.value = challenge || "❌ No challenge received";
 
     let signer;
-    let isWalletConnect = false;
-    let wcProvider;
 
     async function submitSignature(sig) {
       try {
@@ -57,64 +49,42 @@
         const result = await resp.json();
         if (result.success) {
           status.innerText = "✅ Verified! Role assigned. Private channel will auto-delete.";
-          retryBtn.style.display = "none";
         } else {
           status.innerText = "❌ Verification failed: " + (result.error || "Unknown error");
-          if (isWalletConnect) retryBtn.style.display = "inline-block";
         }
       } catch (err) {
         console.error(err);
         status.innerText = "❌ Error submitting signature: " + (err.message || err);
-        if (isWalletConnect) retryBtn.style.display = "inline-block";
       }
     }
 
     async function signChallenge() {
       try {
-        status.innerText = "Signing challenge...";
         const sig = await signer.signMessage(challenge);
         await submitSignature(sig);
       } catch (err) {
         console.error(err);
         status.innerText = "❌ Error signing: " + (err.message || err);
-        if (isWalletConnect) retryBtn.style.display = "inline-block";
       }
     }
 
     btn.onclick = async () => {
-      status.innerText = "Connecting wallet...";
+      status.innerText = "Checking for wallet...";
       try {
-        if (window.ethereum) {
-          // Desktop / injected wallet
-          const provider = new ethers.BrowserProvider(window.ethereum);
-          await provider.send("eth_requestAccounts", []);
-          signer = await provider.getSigner();
-          isWalletConnect = false;
-          status.innerText = "Wallet connected via injected provider.";
-          await signChallenge();
-        } else {
-          // Mobile: WalletConnect v1
-          isWalletConnect = true;
-          wcProvider = new WalletConnectProvider.default({
-            rpc: { 1: "https://mainnet.infura.io/v3/" + INFURA_KEY }
-          });
-          await wcProvider.enable();
-          const provider = new ethers.providers.Web3Provider(wcProvider);
-          signer = provider.getSigner();
-          status.innerText = "WalletConnect connected: approve signing request in your wallet.";
-          await signChallenge();
+        if (!window.ethereum) {
+          status.innerText = "❌ No wallet detected. Please open this page in a wallet-enabled browser or use a desktop.";
+          return;
         }
+
+        const provider = new ethers.BrowserProvider(window.ethereum);
+        await provider.send("eth_requestAccounts", []);
+        signer = await provider.getSigner();
+        status.innerText = "Wallet connected. Please approve the signature request in your wallet.";
+        await signChallenge();
       } catch (err) {
         console.error(err);
-        status.innerText = "❌ Wallet connection error: " + (err.message || err);
-        if (isWalletConnect) retryBtn.style.display = "inline-block";
+        status.innerText = "❌ Wallet connection/signing error: " + (err.message || err);
       }
-    };
-
-    retryBtn.onclick = async () => {
-      if (!signer) return alert("Wallet not connected yet.");
-      retryBtn.style.display = "none";
-      await signChallenge();
     };
   </script>
 </body>
