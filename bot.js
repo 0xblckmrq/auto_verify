@@ -1,7 +1,15 @@
 require("dotenv").config();
 const path = require("path");
 const express = require("express");
-const { Client, GatewayIntentBits, REST, Routes, PermissionsBitField, ChannelType, SlashCommandBuilder } = require("discord.js");
+const {
+  Client,
+  GatewayIntentBits,
+  REST,
+  Routes,
+  PermissionsBitField,
+  ChannelType,
+  SlashCommandBuilder
+} = require("discord.js");
 const fetch = (...args) => import("node-fetch").then(({ default: fetch }) => fetch(...args));
 const { ethers } = require("ethers");
 
@@ -196,11 +204,14 @@ client.on("interactionCreate", async interaction => {
     const wallet = interaction.options.getString("wallet").toLowerCase();
     const userId = interaction.user.id.toString();
 
+    // defer reply immediately
+    await interaction.deferReply({ ephemeral: true });
+
     const now = Date.now();
     const last = cooldowns.get(userId) || 0;
     if (now - last < COOLDOWN_SECONDS * 1000) {
       const remaining = Math.ceil((COOLDOWN_SECONDS * 1000 - (now - last)) / 1000);
-      return interaction.reply({ content: `⏳ You can verify again in ${remaining} seconds.`, ephemeral: true });
+      return interaction.editReply({ content: `⏳ You can verify again in ${remaining} seconds.` });
     }
     cooldowns.set(userId, now);
 
@@ -211,7 +222,7 @@ client.on("interactionCreate", async interaction => {
       w.humanityStatus?.toUpperCase() === "VERIFIED"
     );
 
-    if (!entry) return interaction.reply({ content: "❌ Wallet not eligible: must be SIGNED + VERIFIED.", ephemeral: true });
+    if (!entry) return interaction.editReply({ content: "❌ Wallet not eligible: must be SIGNED + VERIFIED." });
 
     try {
       const channel = await guild.channels.create({
@@ -238,11 +249,11 @@ Click the link to connect your wallet and sign the challenge automatically:
 Verification is automatic. Role will be assigned after signing, channel deletes automatically.
       `);
 
-      return interaction.reply({ content: `✅ Private verification channel created: ${channel}`, ephemeral: true });
+      return interaction.editReply({ content: `✅ Private verification channel created: ${channel}` });
 
     } catch (err) {
       console.error(err);
-      return interaction.reply({ content: "❌ Failed to create verification channel.", ephemeral: true });
+      return interaction.editReply({ content: "❌ Failed to create verification channel." });
     }
   }
 });
