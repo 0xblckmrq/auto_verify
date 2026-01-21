@@ -4,37 +4,31 @@
   <meta charset="utf-8">
   <title>human.tech Covenant Signatory Verification</title>
   <style>
-    body { font-family: sans-serif; padding:20px; max-width:600px; margin:auto; }
-    button { padding:12px 16px; margin-top:20px; font-size:16px; cursor:pointer; }
-    #status { margin-top:15px; word-break: break-word; }
-    input { width:100%; padding:8px; margin-top:5px; }
+    body { font-family: sans-serif; padding: 20px; }
+    input { width: 90%; padding: 8px; margin-bottom: 10px; }
+    button { padding: 10px 14px; }
+    #signature { margin-top: 10px; word-break: break-all; }
   </style>
 </head>
 <body>
   <h2>human.tech Covenant Signatory Verification</h2>
   <p>Connect the wallet used to sign the covenant and sign the challenge below.</p>
 
-  <p>Challenge:</p>
-  <input id="msg" readonly />
+  <p>Challenge message (auto-filled from URL):</p>
+  <input type="text" id="msg" readonly>
+  <br>
+  <button onclick="sign()">Connect & Sign</button>
 
-  <button id="connectBtn">Connect & Sign</button>
-
-  <p id="status"></p>
+  <p id="signature"></p>
 
 <script type="module">
 import WalletConnectProvider from "https://cdn.jsdelivr.net/npm/@walletconnect/web3-provider/dist/esm/index.min.js";
 
 const urlParams = new URLSearchParams(window.location.search);
 const challenge = urlParams.get("challenge") || "";
+document.getElementById("msg").value = challenge;
 
-const msgInput = document.getElementById("msg");
-const status = document.getElementById("status");
-const btn = document.getElementById("connectBtn");
-
-msgInput.value = challenge;
-
-btn.addEventListener("click", async () => {
-  status.innerText = "Connecting wallet...";
+async function sign() {
   let provider;
 
   try {
@@ -55,21 +49,20 @@ btn.addEventListener("click", async () => {
 
     const accounts = await provider.request({ method: "eth_accounts" });
     const account = accounts[0];
+    const msg = document.getElementById("msg").value;
 
-    status.innerText = `Wallet connected: ${account}\nSigning challenge...`;
-
-    const signature = await provider.request({
+    const sig = await provider.request({
       method: "personal_sign",
-      params: [challenge, account]
+      params: [msg, account]
     });
 
-    status.innerText = "✅ Signed successfully.\n\nPaste this signature back into Discord using:\n/signature <value>\n\n" + signature;
+    document.getElementById("signature").innerText = sig;
 
-  } catch (err) {
-    console.error(err);
-    status.innerText = "❌ Error: " + err.message;
+  } catch (e) {
+    console.error(e);
+    alert(e.message || e);
   }
-});
+}
 </script>
 </body>
 </html>
