@@ -72,7 +72,7 @@ client.on("interactionCreate", async interaction => {
 
   if (interaction.commandName === "verify") {
     const wallet = interaction.options.getString("wallet").toLowerCase();
-    const userId = interaction.user.id;
+    const userId = interaction.user.id.toString();
 
     // Cooldown
     const now = Date.now();
@@ -106,11 +106,11 @@ client.on("interactionCreate", async interaction => {
 
       // Store challenge
       const challenge = `Verify ownership for ${wallet} at ${Date.now()}`;
-      challenges.set(member.id, { challenge, wallet, channelId: channel.id });
+      challenges.set(userId, { challenge, wallet, channelId: channel.id });
 
       // Generate signer URL
       const base = EXTERNAL_URL.replace(/\/$/, "");
-      const signerUrl = `${base}/signer.html?userId=${member.id}&challenge=${encodeURIComponent(challenge)}`;
+      const signerUrl = `${base}/signer.html?userId=${userId}&challenge=${encodeURIComponent(challenge)}`;
 
       // Send instructions in private channel
       await channel.send(`
@@ -137,7 +137,7 @@ app.post("/api/signature", async (req, res) => {
   const { userId, signature } = req.body;
   if (!userId || !signature) return res.status(400).json({ error: "Missing userId or signature" });
 
-  const data = challenges.get(userId);
+  const data = challenges.get(userId.toString());
   if (!data) return res.status(400).json({ error: "No active verification" });
 
   try {
