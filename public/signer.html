@@ -44,7 +44,6 @@
     let isWalletConnect = false;
     let wcProvider;
 
-    // Function to sign and submit
     async function signAndSubmit() {
       try {
         status.innerText = "Signing challenge...";
@@ -77,7 +76,7 @@
     btn.onclick = async () => {
       status.innerText = "Connecting wallet...";
       try {
-        // Desktop / injected wallets
+        // ✅ Desktop / injected wallets (MetaMask, Brave, etc.) → keep original BrowserProvider
         if (window.ethereum) {
           const provider = new ethers.BrowserProvider(window.ethereum);
           await provider.send("eth_requestAccounts", []);
@@ -85,19 +84,20 @@
           isWalletConnect = false;
           status.innerText = "Wallet connected via injected provider.";
         } else {
-          // Mobile WalletConnect
+          // ✅ Mobile WalletConnect → use Web3Provider to ensure pending request
           isWalletConnect = true;
           wcProvider = new WalletConnectProvider.default({
             rpc: { 1: "https://cloudflare-eth.com" }
           });
 
-          // ⚠ IMPORTANT: enable() must fully resolve before signer creation
+          // Must fully enable session before creating signer
           await wcProvider.enable();
 
-          const provider = new ethers.BrowserProvider(wcProvider);
-          signer = await provider.getSigner();
+          // Use ethers 5 style Web3Provider here for WalletConnect
+          const provider = new ethers.providers.Web3Provider(wcProvider);
+          signer = provider.getSigner();
 
-          status.innerText = "WalletConnect connected: open your wallet app and approve the signing request.";
+          status.innerText = "WalletConnect connected: open your wallet app and approve the signing request in Pending Requests / Activity.";
         }
 
         await signAndSubmit();
