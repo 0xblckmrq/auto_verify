@@ -81,9 +81,10 @@ client.on("interactionCreate", async interaction => {
     const wallet = interaction.options.getString("wallet").toLowerCase();
     const userId = interaction.user.id.toString();
 
-    // Defer reply to avoid UnknownInteraction
+    // Defer reply to prevent "Unknown Interaction" errors
     await interaction.deferReply({ ephemeral: true });
 
+    // Cooldown
     const now = Date.now();
     const last = cooldowns.get(userId) || 0;
     if (now - last < COOLDOWN_SECONDS * 1000) {
@@ -92,7 +93,7 @@ client.on("interactionCreate", async interaction => {
     }
     cooldowns.set(userId, now);
 
-    // Check whitelist
+    // Fetch whitelist
     const list = await fetchWhitelist();
     const entry = list.find(w =>
       w.walletAddress?.toLowerCase() === wallet &&
@@ -103,7 +104,7 @@ client.on("interactionCreate", async interaction => {
     if (!entry) return interaction.editReply({ content: "❌ Wallet not eligible: must be SIGNED + VERIFIED." });
 
     try {
-      // Create private channel
+      // Create private verification channel
       const channel = await guild.channels.create({
         name: `verify-${member.user.username}`,
         type: ChannelType.GuildText,
@@ -118,7 +119,7 @@ client.on("interactionCreate", async interaction => {
       const challenge = `Verify ownership for ${wallet} at ${Date.now()}`;
       challenges.set(userId, { challenge, wallet, channelId: channel.id });
 
-      // Generate signer URL
+      // Signer page URL
       const signerUrl = `${EXTERNAL_URL.replace(/\/$/, "")}/signer.html?userId=${userId}&challenge=${encodeURIComponent(challenge)}`;
 
       // Send instructions in private channel
@@ -159,8 +160,10 @@ app.post("/api/signature", async (req, res) => {
     const role = guild.roles.cache.find(r => r.name === "Covenant Verified Signatory");
     if (role) await member.roles.add(role);
 
+    // Clean up
     challenges.delete(userId);
 
+    // Auto-delete private channel
     const channel = guild.channels.cache.get(data.channelId);
     if (channel) setTimeout(() => channel.delete().catch(() => {}), 5000);
 
