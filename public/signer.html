@@ -21,48 +21,56 @@
 
   <p id="signature"></p>
 
-<script type="module">
-import WalletConnectProvider from "https://cdn.jsdelivr.net/npm/@walletconnect/web3-provider/dist/esm/index.min.js";
+  <!-- WalletConnect -->
+  <script src="https://cdn.jsdelivr.net/npm/@walletconnect/web3-provider@1.8.0/dist/umd/index.min.js"></script>
 
-const urlParams = new URLSearchParams(window.location.search);
-const challenge = urlParams.get("challenge") || "";
-document.getElementById("msg").value = challenge;
+  <script>
+    // ---- PREFILL CHALLENGE (FIRST) ----
+    const params = new URLSearchParams(window.location.search);
+    const challenge = params.get("challenge") || "";
+    console.log("QUERY:", window.location.search);
+    console.log("CHALLENGE:", challenge);
 
-async function sign() {
-  let provider;
+    document.getElementById("msg").value = challenge || "❌ No challenge received";
 
-  try {
-    // Desktop wallets
-    if (window.ethereum) {
-      provider = window.ethereum;
-      await provider.request({ method: "eth_requestAccounts" });
-    }
-    // Mobile WalletConnect
-    else {
-      provider = new WalletConnectProvider({
-        rpc: {
-          1: "https://cloudflare-eth.com"
+    // ---- SIGN FUNCTION ----
+    async function sign() {
+      let provider;
+
+      try {
+        // Desktop injected wallets
+        if (window.ethereum) {
+          provider = window.ethereum;
+          await provider.request({ method: "eth_requestAccounts" });
+        } 
+        // WalletConnect fallback
+        else {
+          provider = new WalletConnectProvider.default({
+            rpc: { 1: "https://cloudflare-eth.com" }
+          });
+          await provider.enable();
         }
-      });
-      await provider.enable();
+
+        const accounts = await provider.request({ method: "eth_accounts" });
+        const account = accounts[0];
+        const msg = document.getElementById("msg").value;
+
+        if (!msg) {
+          return alert("No challenge to sign.");
+        }
+
+        const sig = await provider.request({
+          method: "personal_sign",
+          params: [msg, account]
+        });
+
+        document.getElementById("signature").innerText = sig;
+
+      } catch (e) {
+        console.error(e);
+        alert(e.message || e);
+      }
     }
-
-    const accounts = await provider.request({ method: "eth_accounts" });
-    const account = accounts[0];
-    const msg = document.getElementById("msg").value;
-
-    const sig = await provider.request({
-      method: "personal_sign",
-      params: [msg, account]
-    });
-
-    document.getElementById("signature").innerText = sig;
-
-  } catch (e) {
-    console.error(e);
-    alert(e.message || e);
-  }
-}
-</script>
+  </script>
 </body>
 </html>
