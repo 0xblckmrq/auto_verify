@@ -71,6 +71,9 @@ client.on("interactionCreate", async interaction => {
   const member = interaction.member;
 
   if (interaction.commandName === "verify") {
+    // ✅ IMPORTANT FIX
+    await interaction.deferReply({ ephemeral: true });
+
     const wallet = interaction.options.getString("wallet").toLowerCase();
     const userId = interaction.user.id.toString();
 
@@ -79,7 +82,7 @@ client.on("interactionCreate", async interaction => {
     const last = cooldowns.get(userId) || 0;
     if (now - last < COOLDOWN_SECONDS * 1000) {
       const remaining = Math.ceil((COOLDOWN_SECONDS * 1000 - (now - last)) / 1000);
-      return interaction.reply({ content: `⏳ You can verify again in ${remaining} seconds.`, ephemeral: true });
+      return interaction.editReply({ content: `⏳ You can verify again in ${remaining} seconds.` });
     }
     cooldowns.set(userId, now);
 
@@ -91,7 +94,9 @@ client.on("interactionCreate", async interaction => {
       w.humanityStatus?.toUpperCase() === "VERIFIED"
     );
 
-    if (!entry) return interaction.reply({ content: "❌ Wallet not eligible: must be SIGNED + VERIFIED.", ephemeral: true });
+    if (!entry) {
+      return interaction.editReply({ content: "❌ Wallet not eligible: must be SIGNED + VERIFIED." });
+    }
 
     try {
       const channel = await guild.channels.create({
@@ -112,22 +117,21 @@ client.on("interactionCreate", async interaction => {
       const base = EXTERNAL_URL.replace(/\/$/, "");
       const signerUrl = `${base}/signer.html?userId=${userId}&challenge=${encodeURIComponent(challenge)}`;
 
-      // Send instructions in private channel
       await channel.send(`
 # human.tech Covenant Signatory Verification
 
-Click the link to connect your wallet and sign the challenge automatically:
+Connect the wallet used to sign the covenant and sign the challenge below.
 
 🔗 ${signerUrl}
 
-Verification is automatic. Role will be assigned after signing, channel deletes automatically.
+After signing, the role will be assigned automatically and this channel will delete.
       `);
 
-      return interaction.reply({ content: `✅ Private verification channel created: ${channel}`, ephemeral: true });
+      return interaction.editReply({ content: `✅ Private verification channel created: ${channel}` });
 
     } catch (err) {
       console.error(err);
-      return interaction.reply({ content: "❌ Failed to create verification channel.", ephemeral: true });
+      return interaction.editReply({ content: "❌ Failed to create verification channel." });
     }
   }
 });
@@ -142,7 +146,9 @@ app.post("/api/signature", async (req, res) => {
 
   try {
     const recovered = ethers.verifyMessage(data.challenge, signature);
-    if (recovered.toLowerCase() !== data.wallet.toLowerCase()) return res.status(400).json({ error: "Signature mismatch" });
+    if (recovered.toLowerCase() !== data.wallet.toLowerCase()) {
+      return res.status(400).json({ error: "Signature mismatch" });
+    }
 
     const guild = client.guilds.cache.get(GUILD_ID);
     const member = await guild.members.fetch(userId);
@@ -150,7 +156,6 @@ app.post("/api/signature", async (req, res) => {
     const role = guild.roles.cache.find(r => r.name === "Covenant Verified Signatory");
     if (role) await member.roles.add(role);
 
-    // Clean up
     challenges.delete(userId);
 
     const channel = guild.channels.cache.get(data.channelId);
