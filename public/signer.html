@@ -4,7 +4,6 @@
   <meta charset="UTF-8">
   <title>human.tech Covenant Signatory Verification</title>
   <style>
-    /* --- Brand Colors --- */
     :root {
       --primary: #3458EA;
       --success: #63AD14;
@@ -50,71 +49,6 @@
       border-radius: 14px;
       box-shadow: 0 8px 20px rgba(0,0,0,0.1);
       border-top: 5px solid var(--primary);
-    }
-
-    input {
-      width: 100%;
-      padding: 12px;
-      font-size: 1rem;
-      margin-bottom: 20px;
-      border: 2px solid var(--primary);
-      border-radius: 10px;
-      background: #fff;
-      font-family: monospace;
-      color: var(--text-color);
-    }
-
-    button {
-      padding: 14px 0;
-      font-size: 1.1rem;
-      border: none;
-      border-radius: 10px;
-      background: var(--primary);
-      color: #fff;
-      cursor: pointer;
-      transition: 0.3s all;
-      width: 100%;
-      position: relative;
-      overflow: hidden;
-      font-weight: 600;
-    }
-
-    button:hover {
-      background: #2c47bf;
-    }
-
-    button.loading::after {
-      content: '';
-      position: absolute;
-      top: 50%;
-      left: 50%;
-      width: 24px;
-      height: 24px;
-      margin: -12px 0 0 -12px;
-      border: 3px solid #fff;
-      border-top: 3px solid var(--highlight);
-      border-radius: 50%;
-      animation: spin 1s linear infinite;
-      z-index: 10;
-    }
-
-    @keyframes spin {
-      0% { transform: rotate(0deg);}
-      100% { transform: rotate(360deg);}
-    }
-
-    #status {
-      margin-top: 20px;
-      font-size: 1rem;
-      color: var(--primary);
-    }
-
-    #signature {
-      margin-top: 10px;
-      font-size: 0.95rem;
-      color: var(--success);
-      word-break: break-word;
-      font-family: monospace;
     }
 
     .steps {
@@ -169,6 +103,72 @@
     .step.active + .step::after {
       background: var(--highlight);
     }
+
+    input#msg {
+      width: 100%;
+      font-family: monospace;
+      font-size: 0.75rem;
+      padding: 12px;
+      margin-bottom: 20px;
+      border: 2px solid var(--primary);
+      border-radius: 10px;
+      background: #fff;
+      color: var(--text-color);
+    }
+
+    button#signBtn {
+      padding: 14px 0;
+      font-size: 1.1rem;
+      border: none;
+      border-radius: 10px;
+      background: var(--primary);
+      color: #fff;
+      cursor: pointer;
+      transition: 0.3s all;
+      width: 100%;
+      font-weight: 600;
+      position: relative;
+      overflow: hidden;
+    }
+
+    button#signBtn:hover {
+      background: #2c47bf;
+    }
+
+    button.loading::after {
+      content: '';
+      position: absolute;
+      top: 50%;
+      left: 50%;
+      width: 24px;
+      height: 24px;
+      margin: -12px 0 0 -12px;
+      border: 3px solid #fff;
+      border-top: 3px solid var(--highlight);
+      border-radius: 50%;
+      animation: spin 1s linear infinite;
+      z-index: 10;
+    }
+
+    @keyframes spin {
+      0% { transform: rotate(0deg);}
+      100% { transform: rotate(360deg);}
+    }
+
+    #status {
+      margin-top: 20px;
+      font-size: 1rem;
+      color: var(--primary);
+    }
+
+    #signature {
+      margin-top: 10px;
+      font-size: 0.95rem;
+      color: var(--success);
+      word-break: break-word;
+      font-family: monospace;
+    }
+
   </style>
 </head>
 <body>
@@ -187,9 +187,8 @@
       <div class="step" id="step4">Verified</div>
     </div>
 
-    <p>Connect the wallet used to sign the covenant and sign the challenge below.</p>
+    <p>Connect your wallet used for the covenant and sign the challenge below.</p>
 
-    <label for="msg"><strong>Challenge message:</strong></label>
     <input type="text" id="msg" readonly>
 
     <button id="signBtn">Connect & Sign</button>
@@ -283,6 +282,5 @@
       }
     };
   </script>
-
 </body>
 </html>
