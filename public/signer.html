@@ -1,26 +1,166 @@
 <!DOCTYPE html>
-<html>
+<html lang="en">
 <head>
-  <meta charset="utf-8">
+  <meta charset="UTF-8">
   <title>human.tech Covenant Signatory Verification</title>
   <style>
-    body { font-family: sans-serif; padding: 20px; max-width: 600px; margin:auto; }
-    input { width: 90%; padding: 8px; margin-bottom: 10px; }
-    button { padding: 10px 14px; font-size:16px; cursor:pointer; }
-    #status, #signature { margin-top: 10px; word-break: break-word; }
+    body {
+      font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+      background: #f4f7fb;
+      color: #111;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      padding: 20px;
+      margin: 0;
+    }
+
+    header {
+      display: flex;
+      align-items: center;
+      gap: 15px;
+      margin-bottom: 30px;
+    }
+
+    header img {
+      height: 50px;
+    }
+
+    header h1 {
+      font-size: 1.8rem;
+      margin: 0;
+      color: #0b3d91;
+    }
+
+    main {
+      width: 100%;
+      max-width: 600px;
+      background: #fff;
+      padding: 30px;
+      border-radius: 12px;
+      box-shadow: 0 4px 15px rgba(0,0,0,0.1);
+    }
+
+    input {
+      width: 100%;
+      padding: 10px;
+      font-size: 1rem;
+      margin-bottom: 15px;
+      border: 1px solid #ccc;
+      border-radius: 8px;
+      background: #f9f9f9;
+    }
+
+    button {
+      padding: 12px 20px;
+      font-size: 1rem;
+      border: none;
+      border-radius: 8px;
+      background: #0b3d91;
+      color: #fff;
+      cursor: pointer;
+      transition: 0.3s all;
+      width: 100%;
+      position: relative;
+    }
+
+    button:hover {
+      background: #0a3578;
+    }
+
+    #status, #signature {
+      margin-top: 15px;
+      word-break: break-word;
+      font-size: 0.95rem;
+    }
+
+    #status {
+      color: #0b3d91;
+    }
+
+    #signature {
+      color: #007700;
+    }
+
+    /* Progress steps */
+    .steps {
+      display: flex;
+      justify-content: space-between;
+      margin-bottom: 20px;
+    }
+
+    .step {
+      flex: 1;
+      text-align: center;
+      position: relative;
+      font-size: 0.9rem;
+      color: #aaa;
+    }
+
+    .step.active {
+      font-weight: bold;
+      color: #0b3d91;
+    }
+
+    .step::before {
+      content: '';
+      width: 12px;
+      height: 12px;
+      border-radius: 50%;
+      background: #ccc;
+      display: block;
+      margin: 0 auto 5px;
+    }
+
+    .step.active::before {
+      background: #0b3d91;
+    }
+
+    .step::after {
+      content: '';
+      position: absolute;
+      top: 6px;
+      left: 50%;
+      height: 2px;
+      width: 100%;
+      background: #ccc;
+      z-index: -1;
+    }
+
+    .step:last-child::after {
+      display: none;
+    }
+
+    .step.active + .step::after {
+      background: #0b3d91;
+    }
   </style>
 </head>
 <body>
-  <h2>human.tech Covenant Signatory Verification</h2>
-  <p>Connect the wallet used to sign the covenant and sign the challenge below.</p>
 
-  <p>Challenge message (auto-filled):</p>
-  <input type="text" id="msg" readonly>
-  <br>
-  <button id="signBtn">Connect & Sign</button>
+  <header>
+    <img src="https://human.tech/logo.png" alt="human.tech Logo">
+    <h1>Covenant Signatory Verification</h1>
+  </header>
 
-  <p id="status"></p>
-  <p id="signature"></p>
+  <main>
+    <div class="steps">
+      <div class="step" id="step1">Connect</div>
+      <div class="step" id="step2">Sign</div>
+      <div class="step" id="step3">Submit</div>
+      <div class="step" id="step4">Verified</div>
+    </div>
+
+    <p>Connect the wallet used to sign the covenant and sign the challenge below.</p>
+
+    <label for="msg"><strong>Challenge message:</strong></label>
+    <input type="text" id="msg" readonly>
+
+    <button id="signBtn">Connect & Sign</button>
+
+    <p id="status"></p>
+    <p id="signature"></p>
+  </main>
 
   <script src="https://cdn.jsdelivr.net/npm/ethers@6.9.0/dist/ethers.umd.min.js"></script>
   <script>
@@ -33,11 +173,23 @@
     const sigOutput = document.getElementById("signature");
     const btn = document.getElementById("signBtn");
 
+    const step1 = document.getElementById("step1");
+    const step2 = document.getElementById("step2");
+    const step3 = document.getElementById("step3");
+    const step4 = document.getElementById("step4");
+
     msgInput.value = challenge || "❌ No challenge received";
 
     let signer;
 
+    function updateStep(stepNum) {
+      [step1, step2, step3, step4].forEach((el, idx) => {
+        el.classList.toggle("active", idx < stepNum);
+      });
+    }
+
     async function submitSignature(sig) {
+      step3.classList.add("active");
       try {
         sigOutput.innerText = sig;
         status.innerText = "Submitting signature to bot...";
@@ -48,6 +200,7 @@
         });
         const result = await resp.json();
         if (result.success) {
+          step4.classList.add("active");
           status.innerText = "✅ Verified! Role assigned. Private channel will auto-delete.";
         } else {
           status.innerText = "❌ Verification failed: " + (result.error || "Unknown error");
@@ -59,6 +212,7 @@
     }
 
     async function signChallenge() {
+      step2.classList.add("active");
       try {
         const sig = await signer.signMessage(challenge);
         await submitSignature(sig);
@@ -69,6 +223,7 @@
     }
 
     btn.onclick = async () => {
+      step1.classList.add("active");
       status.innerText = "Checking for wallet...";
       try {
         if (!window.ethereum) {
@@ -87,5 +242,6 @@
       }
     };
   </script>
+
 </body>
 </html>
